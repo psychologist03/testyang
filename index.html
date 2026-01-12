@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Тест на интернет-зависимость</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; background: #f8f9fa; padding: 15px; border-radius: 10px; }
+  h2 { text-align: center; }
+  .question { background: white; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ddd; }
+  label { display: block; margin: 5px 0; cursor: pointer; }
+  .info-block { margin-bottom: 20px; }
+  .info-block label { font-weight: bold; display: block; margin-bottom: 5px; }
+  .info-block input { width: 95%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; }
+  button { display: block; margin: 20px auto; padding: 12px 25px; font-size: 16px; background-color: #007BFF; color: white; border: none; border-radius: 8px; cursor: pointer; }
+  button:hover { background-color: #0056b3; }
+  button:disabled { background-color: #6c757d; cursor: not-allowed; }
+
+  /* Спиннер */
+  .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #fff;
+    border-right: 3px solid #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Модальное окно */
+  .modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; top: 0; 
+    width: 100%; height: 100%; 
+    background-color: rgba(0,0,0,0.5); 
+    justify-content: center; align-items: center;
+  }
+  .modal-content {
+    background: white; 
+    padding: 25px; 
+    border-radius: 10px; 
+    text-align: center;
+    max-width: 400px;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  @keyframes fadeIn { from {opacity:0; transform:scale(0.9);} to {opacity:1; transform:scale(1);} }
+  .modal button { background-color: #28a745; margin-top: 15px; padding: 8px 16px; border-radius: 6px; color: white; border: none; cursor: pointer; }
+  .modal button:hover { background-color: #218838; }
+</style>
+</head>
+<body>
+
+<h2>Тест на интернет-зависимость</h2>
+
+<div class="info-block">
+  <label for="name">ФИО:</label>
+  <input type="text" id="name" placeholder="Введите ФИО" required>
+  <label for="group">Группа:</label>
+  <input type="text" id="group" placeholder="Введите группу" required>
+</div>
+
+<form id="quizForm">
+  <div id="questions"></div>
+  <button type="button" id="submitBtn" onclick="calculateResult()">Показать результат</button>
+</form>
+
+<!-- Модальное окно -->
+<div class="modal" id="thankModal">
+  <div class="modal-content">
+    <h3>Спасибо за участие!</h3>
+    <p>Ваши ответы успешно отправлены.</p>
+    <button onclick="closeModal()">Закрыть</button>
+  </div>
+</div>
+
+<script>
+
+// --- Блокировка DevTools и копирования ---
+document.addEventListener('keydown', function(e) {
+  // F12
+  if(e.key === "F12") e.preventDefault();
+  // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+  if(e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key.toUpperCase())) e.preventDefault();
+  // Ctrl+U (просмотр исходного кода)
+  if(e.ctrlKey && e.key.toUpperCase() === "U") e.preventDefault();
+  // Ctrl+C / Ctrl+X / Ctrl+S (копирование, вырезать, сохранить)
+  if(e.ctrlKey && ["C","X","S"].includes(e.key.toUpperCase())) e.preventDefault();
+});
+
+// Запрет правой кнопки мыши
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+});
+
+const questions = [
+"Часто ли вы замечаете, что проводите онлайн больше времени, чем намеревались?",
+"Часто ли вы пренебрегаете домашними делами, чтобы провести больше времени в сети?",
+"Часто ли вы предпочитаете пребывание в сети интимному общению с партнером?",
+"Часто ли вы заводите знакомства с пользователями интернет, находясь онлайн?",
+"Часто ли окружающие интересуются количеством времени, проводимым вами в сети?",
+"Часто ли страдают ваши успехи в учебе или работе, так как вы слишком много времени проводите в сети?",
+"Часто ли вы проверяете электронную почту, раньше, чем сделаете что-то другое, более необходимое?",
+"Часто ли страдает ваша производительность труда из-за увлечения интернетом?",
+"Часто ли вы занимаете оборонительную позицию и скрытничаете, когда вас спрашивают, чем вы занимаетесь в сети?",
+"Часто ли вы блокируете беспокоящие мысли о вашей реальной жизни, утешительными мыслями об интернете?",
+"Часто ли вы обнаруживаете себя предвкушющим, как вновь окажетесь в интернете?",
+"Часто ли вы ощущаете, что жизнь без интернета скучна, пуста и безрадостна?",
+"Часто ли вы ругаетесь, кричите или иным образом выражаете свою досаду, когда кто-то пытается отвлечь вас от пребывания в сети?",
+"Часто ли вы пренебрегаете сном, засиживаясь в интернете допоздна?",
+"Часто ли вы предвкушаете, чем займетесь в интернете, находясь оффлайн, или фантазируете о пребывании онлайн?",
+"Часто ли вы говорите себе «еще минутку», находясь онлайн?",
+"Часто ли терпите поражение в попытках сократить время, проводимое в сети?",
+"Часто ли вы пытаетесь скрыть количество времени, проводимое вами в сети?",
+"Часто ли вы выбираете провести время в интернете, вместо того, чтобы выбраться куда-либо с друзьями?",
+"Часто ли вы испытываете депрессию, подавленность или нервозность, будучи вне сети и отмечаете, что это состояние проходит, как только вы оказываетесь онлайн?"
+];
+
+const answers = [
+{ text: "Никогда / крайне редко", value: 1 },
+{ text: "Иногда", value: 2 },
+{ text: "Регулярно", value: 3 },
+{ text: "Часто", value: 4 },
+{ text: "Очень часто", value: 5 }
+];
+
+window.onload = function() {
+  const container = document.getElementById("questions");
+  questions.forEach((q,i) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.innerHTML = `<p><strong>${i+1}. ${q}</strong></p>` + answers.map(a => `
+      <label>
+        <input type="radio" name="q${i}" value="${a.value}" required> ${a.text}
+      </label>`).join("");
+    container.appendChild(div);
+  });
+};
+
+const btn = document.getElementById("submitBtn");
+const modal = document.getElementById("thankModal");
+
+function calculateResult() {
+  const name = document.getElementById("name").value.trim();
+  const group = document.getElementById("group").value.trim();
+
+  if(!name || !group) { alert("Пожалуйста, заполните ФИО и группу."); return; }
+
+  let total = 0;
+  let selectedValues = [];
+  for(let i=0;i<questions.length;i++){
+    const selected = document.querySelector(`input[name="q${i}"]:checked`);
+    if(!selected){ alert("Ответьте на все вопросы."); return; }
+    total += parseInt(selected.value);
+    selectedValues.push(selected.value);
+  }
+
+  let level = "";
+  if(total <= 49) level = "Вы обычный интернет-пользователь.";
+  else if(total <= 79) level = "У вас некоторые проблемы с чрезмерным увлечением интернетом.";
+  else level = "Использование интернета вызывает значительные проблемы в вашей жизни. Требуется помощь специалиста.";
+
+  // Блокируем кнопку и показываем спиннер
+  btn.disabled = true;
+  btn.innerHTML = 'Отправка... <span class="spinner"></span>';
+
+  // Отправка на Google Sheets
+  sendToGoogleSheets({ name, group, total, level, answers: selectedValues });
+
+  // Показ модального окна
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  modal.style.display = 'none';
+  btn.innerHTML = 'Показать результат';
+}
+
+async function sendToGoogleSheets(data) {
+  const scriptURL = "https://script.google.com/macros/s/AKfycbwz3tBfJZyd7iVYyzgHgu9AAUV6oxGJHH7705L47Qp3iN--udcxrbwHT9P0cUpk_CN_Vw/exec";
+  try {
+    await fetch(scriptURL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+  } catch(err){
+    console.error("Ошибка при отправке данных:", err);
+  }
+}
+</script>
+</body>
+</html>
